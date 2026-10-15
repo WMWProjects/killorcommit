@@ -1,5 +1,5 @@
 /* Kill Or Commit: offline support. Caches the app's own files only. Your list lives in this browser's storage, never here. */
-const VERSION = "1.2.1";
+const VERSION = "1.3.0";
 const CACHE = "killorcommit-" + VERSION;
 const ASSETS = ["./", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 self.addEventListener("install", (e) => {
@@ -15,7 +15,8 @@ self.addEventListener("fetch", (e) => {
     const cache = await caches.open(CACHE);
     const key = req.mode === "navigate" ? "./" : req;
     const cached = await cache.match(key, { ignoreSearch: true });
-    const fresh = fetch(req).then((res) => { if (res && res.ok && res.type === "basic") cache.put(key, res.clone()); return res; }).catch(() => cached);
-    return cached || fresh; // open instantly from the saved copy; quietly refresh it for next time
+    const fresh = fetch(req).then((res) => { if (res && res.ok && res.type === "basic") cache.put(key, res.clone()); return res; });
+    if (req.mode === "navigate") return fresh.catch(() => cached); // the page itself: newest version when online, saved copy when offline
+    return cached || fresh.catch(() => cached);
   })());
 });
